@@ -41,6 +41,37 @@ void fact(int n)
         cout << res[i];
 }
 
+// Same as fact just used a simpler approch and vector.
+void largeFactorial(int n)
+{
+    vector<int> res;
+    res.push_back(1); // res[0]=1. minimun ans .
+
+    for (int x = 2; x <= n; x++)
+    {
+        int carry = 0;
+
+        for (int i = 0; i < res.size(); i++) // going from 0 to last index of res[] and multiplying each element with a number.
+        {
+            int prod = res[i] * x + carry;
+            res[i] = prod % 10; // last digit of product
+            carry = prod / 10;  // first digit of product is carry.
+        }
+
+        while (carry != 0)
+        {
+            res.push_back(carry % 10); // pusing rest of the carry in the result vector after every operations.
+            carry /= 10;
+        }
+    }
+
+    reverse(res.begin(), res.end());
+
+    for (auto i : res)
+        cout << i;
+}
+
+
 int main()
 {
     fact(100);
