@@ -3,11 +3,15 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <fstream>
 using namespace std;
 #define ll long long int
 #define vi vector<int>
 
-int exitFlag = 0; /// This flag is used for exiting the application.
+int exitFlag = 0;     /// This flag is used for exiting the application.
+int Record_count = 0; /// This count of how many records are in the Files.
+int Admin_count = 0;  /// This is the count of how many admins can access the library records.(Informations are stored in the )
+
 /// FOR HIDING CURSOR.
 
 void hideCursor()
@@ -77,7 +81,9 @@ private:
     };
 
 public:
-    Book *head = NULL; // Head pointer of the Book list.
+    Book *head = NULL;    // Head pointer of the Book list.
+    void load_records();  // For storing the records inside the Linked List.
+    void write_records(); // For writing the records inside the File.
     void menu();
     void EXIT();
     void insert();
@@ -89,6 +95,90 @@ public:
     void ShowAll();
     void AboutUs();
 };
+
+/// Read Data Function:
+void library::load_records()
+{
+    ifstream in("Book List.txt");
+
+    if (!in)
+    {
+        gotoxy(70, 20);
+        cout << "\n File Not Found....!!";
+        _getch();
+        return; // Error return.
+    }
+
+    in >> Record_count; // Reading total number of Books from the file.
+
+    if (Record_count == 0)
+        return;
+
+    in.ignore(); // Ignore the newline character after the record count.
+
+    //-------------------------------- Reading book info and storing it in Book LL.-----------------------------------------------
+    for (int i = 0; i < Record_count; i++)
+    {
+        Book *newNode = new Book;
+
+        in >> newNode->id;               // book id.
+        in.ignore();                     // Ignore the newline character after the ID.
+        getline(in, newNode->name);      // book name.
+        getline(in, newNode->author);    // book author.
+        getline(in, newNode->publisher); // book publisher.
+
+        newNode->next = NULL; // Initially, every next field is null.
+
+        /// Inserting data inside Book LL:
+        if (head == NULL) // For the first record.
+        {
+            head = newNode;
+        }
+        else
+        {
+            Book *current = head;
+            while (current->next != NULL)
+            {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
+    }
+
+    in.close(); // Closing the file.
+}
+
+/// Write Data Function:
+void library::write_records()
+{
+    ofstream out("Book List.txt");
+
+    if (!out)
+    {
+        gotoxy(70, 20);
+        cout << "\n Error opening file for writing....!!";
+        _getch();
+        return; // Error return.
+    }
+
+    out << Record_count << endl; // Putting total book number inside file first.
+
+    if (Record_count == 0)
+        return;
+
+    //-------------------------------- Writing book info and storing it in Book List File.-----------------------------------------------
+    Book *current = head;
+    while (current != NULL)
+    {
+        out << current->id << endl;
+        out << current->name << endl;
+        out << current->author << endl;
+        out << current->publisher << endl;
+        current = current->next; // Moving to the next node.
+    }
+
+    out.close(); // Closing the file.
+}
 
 /// Sort Function:
 void library ::sort()
@@ -207,6 +297,8 @@ void library::EXIT()
 /// Insert Function:
 void library ::insert()
 {
+    load_records(); // Reading data.
+
     system("cls");
     showTitle("Insert Record.");
 
@@ -251,6 +343,10 @@ void library ::insert()
         current->next = newNode;
     }
 
+    Record_count++; // Increasing the number of books.
+
+    write_records(); // Writing records.
+
     gotoxy(53, 17);
     cout << "New Book Inserted Successfully....!!";
 
@@ -260,6 +356,9 @@ void library ::insert()
 /// Show ALL Funtion:
 void library::ShowAll()
 {
+    load_records(); // Reading data.
+    sort();         // Sorting all data.
+
     system("cls");
     showTitle("List Of All Books");
     Book *ptr = head;
@@ -268,6 +367,7 @@ void library::ShowAll()
     {
         gotoxy(53, 8);
         cout << "There Are No Books In The Library!!";
+        _getch();
         return;
     }
 
@@ -292,6 +392,9 @@ void library::ShowAll()
 /// Search Function:
 void library::search()
 {
+    load_records(); // Reading data.
+    sort();         // Sorting all data.
+
     system("cls");
     showTitle("Search Record");
 
@@ -300,6 +403,7 @@ void library::search()
     {
         gotoxy(53, 8);
         cout << "There Are No Books In The Library!!";
+        _getch();
         return;
     }
 
@@ -406,6 +510,9 @@ void library::Ask_before_operation(string s)
 }
 void library::update()
 {
+    load_records(); // Reading data.
+    sort();         // Sorting all data.
+
     system("cls");
     showTitle("Update Record");
 
@@ -417,6 +524,7 @@ void library::update()
     {
         gotoxy(53, 8);
         cout << "There Are No Books In The Library!!";
+        _getch();
         return;
     }
 
@@ -504,12 +612,18 @@ void library::update()
     cout << "Updated Record Successfully...!!";
 
     sort(); // sorting the data after operation.
+
+    write_records(); // Writng the data inside the file.(As it was an update the total number of books have not changed.)
+
     _getch();
 }
 
 /// Delete Function:
 void library::Delete()
 {
+    load_records(); // Reading data.
+    sort();         // Sorting all data.
+
     system("cls");
     showTitle("Delete Record");
 
@@ -595,6 +709,10 @@ void library::Delete()
     }
 
     sort(); // sorting the data after operation.
+
+    Record_count--;  // Decreasing total number of books.
+    write_records(); // Writing in the files.
+
     _getch();
 }
 
@@ -694,46 +812,64 @@ void library::menu()
         {
             system("cls");
             hideCursor();
-            switch (position)
+            switch (position) /*The head  of the list will be null before any operations so that , the data can be easily read from the file.*/
             {
             case 1: // Insert.
                 system("cls");
                 hideCursor();
+
+                head = NULL;
                 insert();
+
                 break;
+
             case 2: // Search.
                 system("cls");
                 hideCursor();
-                // load_data();
-                sort(); // Sorting all data.
+
+                head = NULL;
                 search();
+
                 break;
+
             case 3: // Update.
+                system("cls");
+                hideCursor();
+
+                head = NULL;
+                update();
+
+                break;
+
+            case 4: // Delete.
+                system("cls");
+                hideCursor();
+
+                head = NULL;
+                Delete();
+
+                break;
+
+            case 5: // Show all data.
+                system("cls");
+                hideCursor();
+
+                head = NULL;
+                ShowAll();
+
+                break;
+
+            case 6:
 
                 system("cls");
                 hideCursor();
-                // load_data();
-                sort(); // Sorting all data.
-                update();
-                break;
-            case 4: // delete.
-                system("cls");
-                hideCursor();
-                sort(); // Sorting all data.
-                Delete();
-                break;
-            case 5:
-                system("cls");
-                hideCursor();
-                sort(); // Sorting all data.
-                ShowAll();
-                break;
-            case 6:
-                system("cls");
-                hideCursor();
+
                 cout << "about us function called.";
+
                 break;
+
             case 7:
+
                 system("cls");
                 hideCursor();
                 EXIT();
@@ -752,6 +888,7 @@ int main()
 {
     hideCursor();
     library obj1;
+    obj1.load_records(); // Reading all existing data from file.
     obj1.menu();
     return 0;
 }
