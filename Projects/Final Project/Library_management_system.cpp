@@ -12,6 +12,7 @@ int exitFlag = 0;     /// This flag is used for exiting the application.
 int Record_count = 0; /// This count of how many records are in the Files.
 int Admin_count = 0;  /// This is the count of how many admins can access the library records.(Informations are stored in the )
 
+void loading(int posX, int posY);
 /// FOR HIDING CURSOR.
 
 void hideCursor()
@@ -26,17 +27,22 @@ void hideCursor()
 /// FOR ARROW CURSOR.
 // realPosition is the position arrow is at.
 // arrowPosition is the position where the user want the arrow to be.
-void arrowHere(int realPosition, int arrowPosition)
+void arrowHere(int realPosition, int arrowPosition, const char *text)
 {
     char arrow = 16;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
     if (realPosition == arrowPosition)
     {
-        printf("%c ", arrow);
+        SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+        printf("%c %s\n", arrow, text);
     }
-
     else
-        printf("  ");
+    {
+        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+        printf("  %s\n", text);
+    }
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
 // Function to move the cursor to a specific position in the console
@@ -332,12 +338,10 @@ void library::EXIT()
         printf("Do you want to exit?!");
 
         gotoxy(75, 16);
-        arrowHere(1, position);
-        printf("YES.");
+        arrowHere(1, position, "YES.");
 
         gotoxy(75, 18);
-        arrowHere(2, position);
-        printf("NO.");
+        arrowHere(2, position, "NO.");
 
         keyPressed = getch();
 
@@ -372,12 +376,213 @@ void library::EXIT()
     }
 }
 
+void library ::first_page() /// sing up and login
+{
+
+    system("cls");
+    hideCursor();
+
+    int position = 1;
+    int keyPressed = 0;
+
+    while (keyPressed != 13)
+    {
+        showTitle("Library Management System");
+
+        gotoxy(75, 10);
+        arrowHere(1, position, "Login ");
+
+        gotoxy(75, 12);
+        arrowHere(2, position, "Sign Up ");
+
+        keyPressed = getch();
+
+        if (keyPressed == 80 && position != 2)
+            position++;
+        else if (keyPressed == 72 && position != 1)
+            position--;
+        else if (keyPressed == 80 && position == 2)
+            position = 1;
+        else if (keyPressed == 72 && position == 1)
+            position = 2;
+        else
+            position = position;
+
+        if (position == 2 && keyPressed == 13)
+        {
+            system("cls");
+            hideCursor();
+            signup();
+        }
+        else if (position == 1 && keyPressed == 13)
+        {
+            system("cls");
+            hideCursor();
+            login();
+        }
+    }
+}
+
+void library::login() /// login function
+{
+    system("cls");
+    char ch;
+
+    string name, pass;
+
+    showTitle("LOGIN");
+
+    gotoxy(50, 8);
+    cout << "Enter user name :";
+    cin >> name;
+    gotoxy(50, 10);
+    cout << "Enter Password : ";
+
+    while (1)
+    {
+
+        ch = getch();
+        if (ch == 13)
+            break;
+        else
+        {
+            pass += ch;
+            cout << "*";
+        }
+    }
+
+    cin.ignore();
+
+    Admin_record_read();
+
+    Admin *str = start; /// starting point of admin list
+
+    int i = 0;
+
+    bool flag = 0; // Match check.
+
+    loading(70, 13);
+
+    while (str != NULL)
+    {
+        if (str->user_name == name && str->password == pass)
+        {
+            gotoxy(73, 18);
+            cout << "Login Successfull \n";
+            i = Admin_count + 1;
+            flag = 1;
+
+            gotoxy(70, 22); // Waiting for user confirmation.
+            printf(">>>Press any key to continue<<<");
+
+            _getch();
+            menu();
+            break;
+        }
+
+        str = str->next;
+        i++;
+    }
+
+    if (flag == 0)
+    {
+        gotoxy(60, 18);
+        cout << "Login Failed \n";
+
+        gotoxy(55, 22); // Waiting for user confirmation.
+        printf(">>>Press any key to go back<<<");
+
+        _getch();
+        first_page();
+    }
+}
+
+void library ::signup() /// signup function
+{
+    Admin_record_read();
+
+    Admin *newnode = new Admin;
+
+    showTitle("Sign Up");
+
+    gotoxy(50, 8);
+    cout << "First Name : ";
+    getline(cin, newnode->first_name);
+    gotoxy(50, 10);
+    cout << "Last Name : ";
+    getline(cin, newnode->last_name);
+    gotoxy(50, 12);
+    cout << "User Name : ";
+    getline(cin, newnode->user_name);
+    gotoxy(50, 14);
+    cout << "Password : ";
+    // getline(cin, newnode->password);
+
+    string pass;
+    char ch;
+
+    while (1)
+    {
+
+        ch = getch();
+        if (ch == 13)
+            break;
+        else
+        {
+            pass += ch;
+            cout << "*";
+            // i++;
+        }
+    }
+
+    newnode->password = pass;
+
+    if (Admin_count == 0)
+    {
+        start = newnode;
+        start->next = NULL;
+        Admin *str = start;
+        //   str->next = NULL;
+    }
+    else
+
+    {
+        Admin *str = start;
+
+        while (str->next != NULL)
+            str = str->next;
+
+        str->next = newnode;
+
+        str = str->next;
+
+        str->next = NULL;
+    }
+
+    Admin_count++;
+
+    Admin_record_write();
+
+    loading(70, 16);
+
+    gotoxy(70, 22);
+    cout << " Sign Up Successfull \n";
+
+    gotoxy(65, 24); // Waiting for user confirmation.
+    printf(">>>Press any key to continue<<<");
+
+    _getch();
+    login();
+}
+
 /// Insert Function:
 void library ::insert()
 {
     Read_recods(); // Reading data.
 
     system("cls");
+    hideCursor();
+
     showTitle("Insert Record.");
 
     // Crearing new node:
@@ -425,184 +630,17 @@ void library ::insert()
 
     write_records(); // Writing records.
 
-    gotoxy(53, 17);
+    loading(53, 17);
+
+    gotoxy(53, 21);
     cout << "New Book Inserted Successfully....!!";
 
-    gotoxy(55, 22); // Waiting for user confirmation.
+    gotoxy(55, 23); // Waiting for user confirmation.
     printf(">>>Press any key to go back<<<");
 
     _getch();
 }
 
-void library ::first_page() /// sing up and login
-{
-
-    system("cls");
-    hideCursor();
-
-    int position = 1;
-    int keyPressed = 0;
-
-    while (keyPressed != 13)
-    {
-        showTitle("Library Management System");
-
-        gotoxy(75, 10);
-        arrowHere(1, position);
-        cout << "Login \n";
-
-        gotoxy(75, 12);
-        arrowHere(2, position);
-        cout << "Sign Up \n";
-
-        keyPressed = getch();
-
-        if (keyPressed == 80 && position != 2)
-            position++;
-
-        else if (keyPressed == 72 && position != 1)
-            position--;
-        else if (keyPressed == 80 && position == 2)
-            position = 1;
-        else if (keyPressed == 72 && position == 1)
-            position = 2;
-
-        else
-            position = position;
-
-        if (position == 2 && keyPressed == 13)
-        {
-            system("cls");
-            hideCursor();
-            signup();
-        }
-        else if (position == 1 && keyPressed == 13)
-        {
-            system("cls");
-            hideCursor();
-            login();
-
-            //   if (exitFlag == 1)
-            // return; /// This will return to the main function.
-        }
-    }
-}
-
-void library::login() /// login function
-{
-    system("cls");
-
-    string name, pass;
-
-    showTitle("LOGIN");
-
-    gotoxy(50, 8);
-    cout << "Enter user name :";
-    cin >> name;
-    gotoxy(50, 10);
-    cout << "Enter Password : ";
-    cin >> pass;
-
-    cin.ignore();
-
-    Admin_record_read();
-
-    Admin *str = start; /// starting point of admin list
-
-    int i = 0;
-
-    bool flag = 0; // Match check.
-
-    while (str != NULL)
-    {
-        if (str->user_name == name && str->password == pass)
-        {
-            gotoxy(60, 14);
-            cout << "Login Successfull \n";
-            i = Admin_count + 1;
-            flag = 1;
-
-            gotoxy(55, 20); // Waiting for user confirmation.
-            printf(">>>Press any key to continue<<<");
-
-            _getch();
-            menu();
-            break;
-        }
-
-        str = str->next;
-        i++;
-    }
-
-    if (flag == 0)
-    {
-        gotoxy(60, 14);
-        cout << "Login Failed \n";
-
-        gotoxy(55, 20); // Waiting for user confirmation.
-        printf(">>>Press any key to go back<<<");
-
-        _getch();
-        first_page();
-    }
-}
-
-void library ::signup() /// signup function
-{
-    Admin_record_read();
-
-    Admin *newnode = new Admin;
-
-    showTitle("Sign Up");
-
-    gotoxy(50, 8);
-    cout << "First Name : ";
-    getline(cin, newnode->first_name);
-    gotoxy(50, 10);
-    cout << "Last Name : ";
-    getline(cin, newnode->last_name);
-    gotoxy(50, 12);
-    cout << "User Name : ";
-    getline(cin, newnode->user_name);
-    gotoxy(50, 14);
-    cout << "Password : ";
-    getline(cin, newnode->password);
-
-    if (Admin_count == 0)
-    {
-        start = newnode;
-        start->next = NULL;
-        Admin *str = start;
-        //   str->next = NULL;
-    }
-    else
-
-    {
-        Admin *str = start;
-
-        while (str->next != NULL)
-            str = str->next;
-
-        str->next = newnode;
-
-        str = str->next;
-
-        str->next = NULL;
-    }
-
-    Admin_count++;
-
-    Admin_record_write();
-
-    gotoxy(60, 17);
-    cout << " Sign Up Successfull \n";
-
-    gotoxy(55, 20); // Waiting for user confirmation.
-    printf(">>>Press any key to continue<<<");
-
-    _getch();
-    login();
-}
 /// Show ALL Funtion:
 void library::ShowAll()
 {
@@ -631,17 +669,17 @@ void library::ShowAll()
     cout << "Name ";
     gotoxy(90, 8);
     cout << "Author Name ";
-    gotoxy(120, 8);
+    gotoxy(122, 8);
     cout << "Publisher Name ";
 
     int y = 10; // Y coordinate.
     while (ptr != NULL)
     {
-        gotoxy(52, y);
+        gotoxy(50, y);
         cout << ptr->id;
-        gotoxy(67, y);
+        gotoxy(65, y);
         cout << ptr->name;
-        gotoxy(92, y);
+        gotoxy(90, y);
         cout << ptr->author;
         gotoxy(122, y);
         cout << ptr->publisher;
@@ -678,6 +716,8 @@ void library::search()
         cout << "Book ID : ";
         cin >> tempId;
 
+        loading(70, 13);
+
         // Search Operation:
         Book *ptr = head;
 
@@ -713,15 +753,17 @@ void library::search()
                 break;
         }
 
-        gotoxy(53, 14);
+        gotoxy(65, 18);
         if (!found)
             cout << "The Book Is Not In The Library...!!";
 
+        gotoxy(65, 20);
+        printf(">>>Press any key to go back<<<");
         _getch();
     }
 }
 
-/// Update Function:
+/// Ask for Confirmation Function:
 
 void library::Ask_before_operation(string s)
 {
@@ -733,12 +775,10 @@ void library::Ask_before_operation(string s)
         cout << "Do You Want To " << s << " This Record?";
 
         gotoxy(80, 24);
-        arrowHere(1, position);
-        cout << " YES.";
+        arrowHere(1, position, " YES.");
 
         gotoxy(80, 26);
-        arrowHere(2, position);
-        cout << " NO.";
+        arrowHere(2, position, " NO.");
 
         keyPressed = getch();
 
@@ -773,6 +813,8 @@ void library::Ask_before_operation(string s)
         }
     }
 }
+
+/// Update Function:
 void library::update()
 {
     Read_recods(); // Reading data.
@@ -802,6 +844,8 @@ void library::update()
         gotoxy(53, 8);
         cout << "Book ID : ";
         cin >> tempId;
+
+        loading(70, 13);
 
         // Search Operation:
         Book *ptr = head;
@@ -846,10 +890,10 @@ void library::update()
 
         if (!found)
         {
-            gotoxy(53, 8);
+            gotoxy(65, 18);
             cout << "The Book Is Not In The Library...!!";
 
-            gotoxy(55, 12); // Waiting for user confirmation.
+            gotoxy(65, 20); // Waiting for user confirmation.
             printf(">>>Press any key to go back<<<");
 
             _getch();
@@ -883,14 +927,16 @@ void library::update()
     cout << "New Publisher Name : ";
     getline(cin, loc->publisher);
 
-    gotoxy(53, 16);
+    loading(70, 16);
+
+    gotoxy(65, 20);
     cout << "Record Updated Successfully...!!";
 
     sort(); // sorting the data after operation.
 
     write_records(); // Writng the data inside the file.(As it was an update the total number of books have not changed.)
 
-    gotoxy(55, 22); // Waiting for user confirmation.
+    gotoxy(65, 24); // Waiting for user confirmation.
     printf(">>>Press any key to go back<<<");
     _getch();
 }
@@ -926,6 +972,8 @@ void library::Delete()
         gotoxy(53, 8);
         cout << "Book ID : ";
         cin >> tempId;
+
+        loading(70, 13);
 
         // Search Operation:
         Book *ptr = head;
@@ -972,10 +1020,10 @@ void library::Delete()
 
         if (!found)
         {
-            gotoxy(53, 8);
+            gotoxy(65, 18);
             cout << "The Book Is Not In The Library...!!";
 
-            gotoxy(55, 12); // Waiting for user confirmation.
+            gotoxy(65, 20); // Waiting for user confirmation.
             printf(">>>Press any key to go back<<<");
 
             _getch();
@@ -986,6 +1034,8 @@ void library::Delete()
     // ----------------------------Delete operation:---------------------------------//
     Ask_before_operation("Delete");
 
+    showTitle("Delete Record");
+
     if (prev == NULL) // First node.
         head = loc->next;
 
@@ -993,7 +1043,10 @@ void library::Delete()
         prev->next = loc->next;
 
     delete loc;
-    gotoxy(53, 10);
+
+    loading(70, 13);
+
+    gotoxy(65, 20);
     cout << "Book Deleted Successfully...!!";
 
     sort(); // sorting the data after operation.
@@ -1001,7 +1054,7 @@ void library::Delete()
     Record_count--;  // Decreasing total number of books.
     write_records(); // Writing in the files.
 
-    gotoxy(55, 22); // Waiting for user confirmation.
+    gotoxy(65, 24); // Waiting for user confirmation.
     printf(">>>Press any key to go back<<<");
     _getch();
 }
@@ -1115,32 +1168,25 @@ void library::menu()
         cout << "What would you like to do today!";
 
         gotoxy(53, 17);
-        arrowHere(1, position);
-        printf("1. Insert New Record.");
+        arrowHere(1, position, "1. Insert New Record.");
 
         gotoxy(53, 19);
-        arrowHere(2, position);
-        printf("2. Search Record.");
+        arrowHere(2, position, "2. Search Record.");
 
         gotoxy(53, 21);
-        arrowHere(3, position);
-        printf("3. Update Record.");
+        arrowHere(3, position, "3. Update Record.");
 
         gotoxy(53, 23);
-        arrowHere(4, position);
-        printf("4. Delete Record.");
+        arrowHere(4, position, "4. Delete Record.");
 
         gotoxy(53, 25);
-        arrowHere(5, position);
-        printf("5. Show All Records.");
+        arrowHere(5, position, "5. Show All Records.");
 
         gotoxy(53, 27);
-        arrowHere(6, position);
-        printf("6. Read something about the Creators.");
+        arrowHere(6, position, "6. Read something about the Creators.");
 
         gotoxy(53, 29);
-        arrowHere(7, position);
-        printf("7. Exit.");
+        arrowHere(7, position, "7. Exit.");
 
         keyPressed = _getch();
 
@@ -1238,10 +1284,40 @@ void library::menu()
 
 int main()
 {
-    system("color 09"); // here 0->Background , 9->text or teminal
     hideCursor();
+    system("color 07");
     library obj1;
     obj1.Read_recods(); // Reading all existing data from file.
     obj1.first_page();
     return 0;
+}
+
+/// Loading animation.
+void loading(int posX, int posY)
+{
+    int time = 25;
+    char c1 = 177, c2 = 219;
+    gotoxy(posX, posY);
+    printf("Loading ... Please wait.");
+
+    // 1st character print.
+    int x1 = posX + 1, cnt1 = 0;
+    while (cnt1 != 21)
+    {
+        gotoxy(x1, posY + 2);
+        printf("%c", c1);
+        x1++;
+        cnt1++;
+    }
+
+    // 2nd character print.
+    int x2 = posX + 1, cnt2 = 0;
+    while (cnt2 != 21)
+    {
+        gotoxy(x2, posY + 2);
+        printf("%c", c2);
+        Sleep(time);
+        x2++;
+        cnt2++;
+    }
 }
